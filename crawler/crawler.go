@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/mvdan/xurls"
 	"golang.org/x/exp/slices"
 )
@@ -112,6 +113,18 @@ func forOneUrl(urllink string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader((sb)))
+    if err != nil {
+        log.Fatal(err)
+    }
+	doc.Find("meta").Each(func(i int, s *goquery.Selection) {
+		if name, _ := s.Attr("name"); name == "description" {
+			description, _ := s.Attr("content")
+			fmt.Printf("Description field: %s\n", description)
+		}
+	})
+
 	linksInPage := xurls.Relaxed.FindAllString(sb, -1)
 	thisURL, err := url.Parse(currSite)
 	if err != nil {
@@ -136,6 +149,7 @@ func forOneUrl(urllink string) {
 		}
 	}
 	fmt.Println("to visit: ", strings.Join(localToVisit, ", "))
+
 	for _, path := range localToVisit {
 		if path != thisURL.Path{
 			parsedUrl, err := url.Parse(urllink);
