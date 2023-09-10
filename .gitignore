@@ -3,3 +3,5 @@ crawler/test2.txt
 findings.csv
 reslulst.txt
 findingsTEST.csv
+searchpage/node_modules
+searchpage/package-lock.json
