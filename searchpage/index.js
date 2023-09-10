@@ -13,6 +13,11 @@ app.use(limiter);
 
 app.use(express.static(__dirname + "/static"));
 
+app.use((req, res, next) => {
+  res.setHeader("X-Powered-By", "Hopes and dreams");
+  next();
+});
+
 app.get("/", (_req, res) => {
   res.sendFile(__dirname + "/html/home.html");
 });
