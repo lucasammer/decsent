@@ -50,7 +50,10 @@ app.get("/search/raw", (req, res) => {
     return;
   }
   let found = data.filter((item) => {
-    return item.description.includes(req.query.q);
+    return (
+      item.description.includes(req.query.q) ||
+      item.address.includes(req.query.q)
+    );
   });
   res.setHeader("Content-Type", "application/json");
   res.json({ results: found, time: Date.now() - reqTime });
