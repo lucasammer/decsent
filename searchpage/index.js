@@ -56,6 +56,18 @@ app.get("/search/raw", (req, res) => {
   res.json({ results: found, time: Date.now() - reqTime });
 });
 
+app.get("/search", (req, res) => {
+  if (req.query.q == null) {
+    res.redirect("/");
+    return;
+  }
+  if (typeof req.query.q != "string") {
+    res.sendStatus(400);
+    return;
+  }
+  res.sendFile(__dirname + "/html/results.html");
+});
+
 app.get("/", (_req, res) => {
   res.sendFile(__dirname + "/html/home.html");
 });
