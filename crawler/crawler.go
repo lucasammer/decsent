@@ -9,7 +9,10 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/mvdan/xurls"
 )
+
 
 func readLines(path string) ([]string, error) {
     file, err := os.Open(path)
@@ -102,6 +105,15 @@ func main() {
 			fmt.Println("No robots.txt file found on " + currSite)
 		}
 
-		fmt.Println(isAllowed("/testing/comments", disallowed, allowed))
+		resp, err = http.Get(currSite)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		sb := string(body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		xurls.Relaxed.FindAllString(sb, -1)
 	}
 }
