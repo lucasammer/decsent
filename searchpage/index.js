@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 const rateLimit = require("express-rate-limit");
+const fs = require("fs");
+const dataloc = __dirname + "/../findingsTEST.csv";
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -8,6 +10,15 @@ const limiter = rateLimit({
   standardHeaders: "draft-7",
   legacyHeaders: false,
 });
+
+let data = fs.readFileSync(dataloc, "utf8");
+data = data.toString("utf8");
+data = data.split(/\r?\n/);
+for (let i = 0; i < data.length; i++) {
+  const element = data[i];
+  let split = element.split(",");
+  data[i] = { address: split[1], description: split[0] };
+}
 
 app.use(limiter);
 
@@ -26,6 +37,23 @@ app.use((req, res, next) => {
   }
 
   next();
+});
+
+app.get("/search/raw", (req, res) => {
+  let reqTime = Date.now();
+  if (req.query.q == null) {
+    res.redirect("/");
+    return;
+  }
+  if (typeof req.query.q != "string") {
+    res.sendStatus(400);
+    return;
+  }
+  let found = data.filter((item) => {
+    return item.description.includes(req.query.q);
+  });
+  res.setHeader("Content-Type", "application/json");
+  res.json({ results: found, time: Date.now() - reqTime });
 });
 
 app.get("/", (_req, res) => {
