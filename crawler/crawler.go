@@ -59,6 +59,67 @@ func isAllowed(path string, disallowList []string, allowList []string) (bool) {
 
 var visited []string;
 
+func externalURL(urllink string) {
+	parsedURL, err := url.Parse(urllink)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	visited = append(visited, urllink)
+	fmt.Println("Crawling to site " + urllink)
+	parsedURL.Path = ""
+	parsedURL.RawQuery = ""
+	parsedURL.Fragment = ""
+	resp, err := http.Get(parsedURL.String() + "/robots.txt")
+	var hasRobotsFile = true;
+	if err != nil{
+		hasRobotsFile = false;
+	}else {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		sb := string(body)
+		if strings.HasPrefix(sb, "<!DOCTYPE html>"){
+			hasRobotsFile = false;
+		}
+	}
+	var allowed []string
+	var disallowed []string
+	if hasRobotsFile {
+		resp, err := http.Get(parsedURL.String() + "/robots.txt")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		sb := string(body)
+		foundRules := strings.Split(strings.ReplaceAll(sb, "\r\n", "\n"), "\n")
+		// sitemap := "none"
+		for i := 0; i < len(foundRules); i++ {
+			if strings.HasPrefix(foundRules[i], "Allow: "){
+				allowed = append(allowed, strings.TrimPrefix(foundRules[i], "Allow: "))
+				fmt.Println("Found allowed location " + strings.TrimPrefix(foundRules[i], "Allow: ") + " for " + parsedURL.String())
+			}else if strings.HasPrefix(foundRules[i], "Disallow: "){
+				disallowed = append(disallowed, strings.TrimPrefix(foundRules[i], "Disallow: "))
+				fmt.Println("Found disallowed location " + strings.TrimPrefix(foundRules[i], "Disallow: ") + " for " + parsedURL.String())
+			}
+			// else if strings.HasPrefix(foundRules[i], "Sitemap: "){
+			// 	sitemap = strings.TrimPrefix(foundRules[i], "Sitemap: ")
+			// 	followSitemap(sitemap, urllink)
+			// 	return
+			// }
+		}
+	}else{
+		fmt.Println("No robots.txt file found on " + parsedURL.String())
+	}
+	parsedURL, err = url.Parse(urllink)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if isAllowed(parsedURL.Path, disallowed, allowed){
+		forOneUrl(urllink)
+	}
+}
+
 func forOneUrl(urllink string) {
 	visited = append(visited, urllink)
 	fmt.Println("Crawling to site " + urllink)
@@ -169,6 +230,7 @@ func forOneUrl(urllink string) {
 		hostName := parsedUrl.Hostname()
 		if hostName != thisHost {
 			fmt.Println(link + " is an external url.");
+			externalURL(link)
 		}else{
 			fmt.Println(link + " allowed: " + strconv.FormatBool(isAllowed(parsedUrl.Path, disallowed, allowed)))
 			if isAllowed(parsedUrl.Path, disallowed, allowed){
