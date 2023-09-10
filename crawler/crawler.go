@@ -121,7 +121,8 @@ func forOneUrl(urllink string) {
 	for _, link := range linksInPage {
 		parsedUrl, err := url.Parse(link);
 		if err != nil {
-			log.Fatalln(err)
+			fmt.Println(err)
+			continue
 		}
 		hostName := parsedUrl.Hostname()
 		if hostName != thisHost {
@@ -133,6 +134,7 @@ func forOneUrl(urllink string) {
 			}
 		}
 	}
+	fmt.Println("to visit: ", strings.Join(localToVisit, ", "))
 	for _, path := range localToVisit {
 		if urllink + path != strings.Replace(urllink + path, "/", "", -1){
 			forOneUrl(urllink + path)
