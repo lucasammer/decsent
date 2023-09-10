@@ -9,6 +9,8 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
+app.use(limiter);
+
 app.use(express.static(__dirname + "/static"));
 
 app.get("/", (_req, res) => {
