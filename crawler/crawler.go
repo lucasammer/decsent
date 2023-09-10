@@ -6,8 +6,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/mvdan/xurls"
@@ -53,6 +55,91 @@ func isAllowed(path string, disallowList []string, allowList []string) (bool) {
 	return true
 }
 
+var visited []string;
+
+func forOneUrl(urllink string) {
+	visited = append(visited, urllink)
+	fmt.Println("Crawling to site " + urllink)
+	resp, err := http.Get(urllink + "/robots.txt")
+
+	var hasRobotsFile = true;
+	if err != nil{
+		hasRobotsFile = false;
+	}else {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		sb := string(body)
+		if strings.HasPrefix(sb, "<!DOCTYPE html>"){
+			hasRobotsFile = false;
+		}
+	}
+
+	var allowed []string
+	var disallowed []string
+
+	var currSite string = urllink
+
+	if hasRobotsFile {
+		resp, err := http.Get(currSite + "/robots.txt")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		sb := string(body)
+		foundRules := strings.Split(strings.ReplaceAll(sb, "\r\n", "\n"), "\n")
+		for i := 0; i < len(foundRules); i++ {
+			if strings.HasPrefix(foundRules[i], "Allow: "){
+				allowed = append(allowed, strings.TrimPrefix(foundRules[i], "Allow: "))
+				fmt.Println("Found allowed location " + strings.TrimPrefix(foundRules[i], "Allow: ") + " for " + currSite)
+			}else if strings.HasPrefix(foundRules[i], "Disallow: "){
+				disallowed = append(disallowed, strings.TrimPrefix(foundRules[i], "Disallow: "))
+				fmt.Println("Found disallowed location " + strings.TrimPrefix(foundRules[i], "Disallow: ") + " for " + currSite)
+			}
+		}
+	}else{
+		fmt.Println("No robots.txt file found on " + currSite)
+	}
+
+	resp, err = http.Get(currSite)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	sb := string(body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	linksInPage := xurls.Relaxed.FindAllString(sb, -1)
+	thisURL, err := url.Parse(currSite)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	thisHost := thisURL.Hostname()
+	var localToVisit []string
+	for _, link := range linksInPage {
+		parsedUrl, err := url.Parse(link);
+		if err != nil {
+			log.Fatalln(err)
+		}
+		hostName := parsedUrl.Hostname()
+		if hostName != thisHost {
+			fmt.Println(link + " is an external url.");
+		}else{
+			fmt.Println(link + " allowed: " + strconv.FormatBool(isAllowed(parsedUrl.Path, disallowed, allowed)))
+			if isAllowed(parsedUrl.Path, disallowed, allowed){
+				localToVisit = append(localToVisit, parsedUrl.Path)
+			}
+		}
+	}
+	for _, path := range localToVisit {
+		if urllink + path != strings.Replace(urllink + path, "/", "", -1){
+			forOneUrl(urllink + path)
+		}
+	}
+}
+
 func main() {
 	fmt.Println("Crawler intialising...")
 	lines, err := readLines("scrapelist.txt")
@@ -62,58 +149,8 @@ func main() {
 	fmt.Println("Crawler starting...")
 
 	for i := 0; i < len(lines); i++ {
-		fmt.Println("Crawling to site " + lines[i])
-		resp, err := http.Get(lines[i] + "/robots.txt")
-
-		var hasRobotsFile = true;
-		if err != nil{
-			hasRobotsFile = false;
-		}else {
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			sb := string(body)
-			if strings.HasPrefix(sb, "<!DOCTYPE html>"){
-				hasRobotsFile = false;
-			}
-		}
-
-		var allowed []string
-		var disallowed []string
-
-		var currSite string = lines[i];
-
-		if hasRobotsFile {
-			resp, err := http.Get(currSite + "/robots.txt")
-			if err != nil {
-				log.Fatalln(err)
-			}
-			body, err := ioutil.ReadAll(resp.Body)
-			sb := string(body)
-			foundRules := strings.Split(strings.ReplaceAll(sb, "\r\n", "\n"), "\n")
-			for i := 0; i < len(foundRules); i++ {
-				if strings.HasPrefix(foundRules[i], "Allow: "){
-					allowed = append(allowed, strings.TrimPrefix(foundRules[i], "Allow: "))
-					fmt.Println("Found allowed location " + strings.TrimPrefix(foundRules[i], "Allow: ") + " for " + currSite)
-				}else if strings.HasPrefix(foundRules[i], "Disallow: "){
-					disallowed = append(disallowed, strings.TrimPrefix(foundRules[i], "Disallow: "))
-					fmt.Println("Found disallowed location " + strings.TrimPrefix(foundRules[i], "Disallow: ") + " for " + currSite)
-				}
-			}
-		}else{
-			fmt.Println("No robots.txt file found on " + currSite)
-		}
-
-		resp, err = http.Get(currSite)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		body, err := ioutil.ReadAll(resp.Body)
-		sb := string(body)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		xurls.Relaxed.FindAllString(sb, -1)
+		forOneUrl(lines[i])
 	}
+
+	fmt.Println("All visited sites: " + strings.Join(visited, ", "))
 }
