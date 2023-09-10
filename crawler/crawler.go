@@ -136,6 +136,24 @@ func forOneUrl(urllink string) {
 	})
 
 	linksInPage := xurls.Relaxed.FindAllString(sb, -1)
+	splitquote := strings.Split(sb, "\"")
+	for i := 0; i < len(splitquote); i++ {
+		if strings.HasSuffix(splitquote[i], "href="){
+			parsedUrl, err := url.Parse(urllink);
+			if err != nil {
+				log.Fatalln(err)
+			}
+			parsedUrl.Path = ""
+			parsedUrl.RawQuery = ""
+			parsedUrl.Fragment = ""
+			if splitquote[i+1][0] == '/' {
+				linksInPage = append(linksInPage, parsedUrl.String() + splitquote[i+1])
+			}else{
+				linksInPage = append(linksInPage, splitquote[i + 1])
+			}
+		}
+	}
+	fmt.Println("all links in page: " + strings.Join(linksInPage, " & "))
 	thisURL, err := url.Parse(currSite)
 	if err != nil {
 		log.Fatalln(err)
