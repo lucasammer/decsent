@@ -225,7 +225,7 @@ func forOneUrl(urllink string) {
 		log.Println(err)
 	}
 	defer f.Close()
-	if _, err := f.WriteString(strings.Replace(title, ",", "", -1) + ":" + strings.Replace(description, ",", "", -1) + "," + currSite); err != nil {
+	if _, err := f.WriteString(strings.Replace(title, ",", "", -1) + ":" + strings.Replace(description, ",", "", -1) + "," + currSite + "\n"); err != nil {
 		log.Println(err)
 	}
 
