@@ -207,16 +207,27 @@ func forOneUrl(urllink string) {
     if err != nil {
         log.Fatal(err)
     }
+	description := ""
+	title := ""
 	doc.Find("meta").Each(func(i int, s *goquery.Selection) {
 		if name, _ := s.Attr("name"); name == "description" {
-			description, _ := s.Attr("content")
+			description, _ = s.Attr("content")
 			fmt.Printf("Description field: %s\n", description)
 		}
 		if name, _ := s.Attr("name"); name == "title" {
-			title, _ := s.Attr("content")
+			title, _= s.Attr("content")
 			fmt.Printf("Title field: %s\n", title)
 		}
 	})
+	f, err := os.OpenFile("../findings.csv",
+	os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(strings.Replace(title, ",", "", -1) + ":" + strings.Replace(description, ",", "", -1) + "," + currSite); err != nil {
+		log.Println(err)
+	}
 
 	linksInPage := xurls.Relaxed.FindAllString(sb, -1)
 	splitquote := strings.Split(sb, "\"")
