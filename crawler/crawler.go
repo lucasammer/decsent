@@ -35,8 +35,8 @@ func readLines(path string) ([]string, error) {
 
 func isAllowed(path string, disallowList []string, allowList []string) (bool) {
 	for _, pattern := range disallowList {
-		matchingTo := strings.Replace(path, "*", ".*", -1)
-		isMatch, err := regexp.MatchString(pattern, matchingTo)
+		matchingTo := strings.Replace(pattern, "*", ".*", -1)
+		isMatch, err := regexp.MatchString(matchingTo, path)
 		if err != nil{
 			return false
 		}
@@ -45,8 +45,8 @@ func isAllowed(path string, disallowList []string, allowList []string) (bool) {
 		}
 	}
 	for _, pattern := range allowList {
-		matchingTo := strings.Replace(path, "*", ".*", -1)
-		isMatch, err := regexp.MatchString(pattern, matchingTo)
+		matchingTo := strings.Replace(pattern, "*", ".*", -1)
+		isMatch, err := regexp.MatchString(matchingTo, path)
 		if err != nil{
 			return false
 		}
@@ -59,13 +59,27 @@ func isAllowed(path string, disallowList []string, allowList []string) (bool) {
 
 var visited []string;
 
+func contains(list []string, query string) (listHasQuery bool){
+	for _, item := range list {
+		if item == query{
+			return true
+		}
+	}
+	return false
+}
+
 func externalURL(urllink string) {
+	if contains(visited, urllink){
+		fmt.Println("Already visited adress")
+		return
+	}
 	parsedURL, err := url.Parse(urllink)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println("Failed to parse")
+		return;
 	}
 	visited = append(visited, urllink)
-	fmt.Println("Crawling to site " + urllink)
+	fmt.Println("preparing external url " + urllink)
 	parsedURL.Path = ""
 	parsedURL.RawQuery = ""
 	parsedURL.Fragment = ""
@@ -116,11 +130,18 @@ func externalURL(urllink string) {
 		log.Fatalln(err)
 	}
 	if isAllowed(parsedURL.Path, disallowed, allowed){
+		fmt.Println("visiting " + urllink + " as result of external url")
 		forOneUrl(urllink)
+	}else{
+		fmt.Println("NOT visiting " + urllink + " as result of external url")
 	}
 }
 
 func forOneUrl(urllink string) {
+	if contains(visited, urllink){
+		fmt.Println("Already visited adress")
+		return
+	}
 	visited = append(visited, urllink)
 	fmt.Println("Crawling to site " + urllink)
 	resp, err := http.Get(urllink + "/robots.txt")
@@ -173,7 +194,8 @@ func forOneUrl(urllink string) {
 
 	resp, err = http.Get(currSite)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println("Failed to GET " + currSite)
+		return
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	sb := string(body)
@@ -207,10 +229,12 @@ func forOneUrl(urllink string) {
 			parsedUrl.Path = ""
 			parsedUrl.RawQuery = ""
 			parsedUrl.Fragment = ""
-			if splitquote[i+1][0] == '/' {
+			if splitquote[i+1][0] == '/' || splitquote[i+1][0] == '#' {
 				linksInPage = append(linksInPage, parsedUrl.String() + splitquote[i+1])
-			}else{
+			}else if strings.HasPrefix(splitquote[i+1], "http"){
 				linksInPage = append(linksInPage, splitquote[i + 1])
+			}else{
+				linksInPage = append(linksInPage, parsedUrl.String() + "/" + splitquote[i+1])
 			}
 		}
 	}
