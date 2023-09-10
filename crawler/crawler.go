@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/mvdan/xurls"
+	"golang.org/x/exp/slices"
 )
 
 
@@ -136,8 +137,20 @@ func forOneUrl(urllink string) {
 	}
 	fmt.Println("to visit: ", strings.Join(localToVisit, ", "))
 	for _, path := range localToVisit {
-		if urllink + path != strings.Replace(urllink + path, "/", "", -1){
-			forOneUrl(urllink + path)
+		if path != thisURL.Path{
+			parsedUrl, err := url.Parse(urllink);
+			if err != nil {
+				log.Fatalln(err)
+			}
+			parsedUrl.Path = ""
+			parsedUrl.RawQuery = ""
+			parsedUrl.Fragment = ""
+
+			if slices.Contains(visited, parsedUrl.String() + path){
+				fmt.Println("already been here!")
+				continue
+			}
+			forOneUrl(parsedUrl.String() + path)
 		}
 	}
 }
