@@ -1,0 +1,19 @@
+{
+  "name": "decsent",
+  "version": "1.0.0",
+  "description": "A search engine sort of ig",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucasammer/decsent.git"
+  },
+  "author": "LucasAmmer",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lucasammer/decsent/issues"
+  },
+  "homepage": "https://github.com/lucasammer/decsent#readme"
+}
