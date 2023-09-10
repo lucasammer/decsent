@@ -91,6 +91,7 @@ func forOneUrl(urllink string) {
 		body, err := ioutil.ReadAll(resp.Body)
 		sb := string(body)
 		foundRules := strings.Split(strings.ReplaceAll(sb, "\r\n", "\n"), "\n")
+		// sitemap := "none"
 		for i := 0; i < len(foundRules); i++ {
 			if strings.HasPrefix(foundRules[i], "Allow: "){
 				allowed = append(allowed, strings.TrimPrefix(foundRules[i], "Allow: "))
@@ -99,6 +100,11 @@ func forOneUrl(urllink string) {
 				disallowed = append(disallowed, strings.TrimPrefix(foundRules[i], "Disallow: "))
 				fmt.Println("Found disallowed location " + strings.TrimPrefix(foundRules[i], "Disallow: ") + " for " + currSite)
 			}
+			// else if strings.HasPrefix(foundRules[i], "Sitemap: "){
+			// 	sitemap = strings.TrimPrefix(foundRules[i], "Sitemap: ")
+			// 	followSitemap(sitemap, urllink)
+			// 	return
+			// }
 		}
 	}else{
 		fmt.Println("No robots.txt file found on " + currSite)
