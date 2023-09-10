@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -27,12 +28,22 @@ func readLines(path string) ([]string, error) {
 
 func isAllowed(path string, disallowList []string, allowList []string) (bool) {
 	for _, pattern := range disallowList {
-		if strings.HasPrefix(path, pattern) {
+		matchingTo := strings.Replace(path, "*", ".*", -1)
+		isMatch, err := regexp.MatchString(pattern, matchingTo)
+		if err != nil{
+			return false
+		}
+		if isMatch{
 			return false
 		}
 	}
 	for _, pattern := range allowList {
-		if strings.HasPrefix(path, pattern){
+		matchingTo := strings.Replace(path, "*", ".*", -1)
+		isMatch, err := regexp.MatchString(pattern, matchingTo)
+		if err != nil{
+			return false
+		}
+		if isMatch{
 			return true
 		}
 	}
@@ -68,8 +79,10 @@ func main() {
 		var allowed []string
 		var disallowed []string
 
+		var currSite string = lines[i];
+
 		if hasRobotsFile {
-			resp, err := http.Get(lines[i] + "/robots.txt")
+			resp, err := http.Get(currSite + "/robots.txt")
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -79,16 +92,16 @@ func main() {
 			for i := 0; i < len(foundRules); i++ {
 				if strings.HasPrefix(foundRules[i], "Allow: "){
 					allowed = append(allowed, strings.TrimPrefix(foundRules[i], "Allow: "))
-					fmt.Println("Found allowed location " + strings.TrimPrefix(foundRules[i], "Allow: ") + " for " + lines[i])
+					fmt.Println("Found allowed location " + strings.TrimPrefix(foundRules[i], "Allow: ") + " for " + currSite)
 				}else if strings.HasPrefix(foundRules[i], "Disallow: "){
 					disallowed = append(disallowed, strings.TrimPrefix(foundRules[i], "Disallow: "))
-					fmt.Println("Found disallowed location " + strings.TrimPrefix(foundRules[i], "Disallow: ") + " for " + lines[i])
+					fmt.Println("Found disallowed location " + strings.TrimPrefix(foundRules[i], "Disallow: ") + " for " + currSite)
 				}
 			}
 		}else{
-			fmt.Println("No robots.txt file found on " + lines[i])
+			fmt.Println("No robots.txt file found on " + currSite)
 		}
 
-		fmt.Println(isAllowed("/testing/stars", disallowed, allowed))
+		fmt.Println(isAllowed("/testing/comments", disallowed, allowed))
 	}
 }
