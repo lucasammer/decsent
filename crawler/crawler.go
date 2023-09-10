@@ -123,6 +123,10 @@ func forOneUrl(urllink string) {
 			description, _ := s.Attr("content")
 			fmt.Printf("Description field: %s\n", description)
 		}
+		if name, _ := s.Attr("name"); name == "title" {
+			title, _ := s.Attr("content")
+			fmt.Printf("Title field: %s\n", title)
+		}
 	})
 
 	linksInPage := xurls.Relaxed.FindAllString(sb, -1)
